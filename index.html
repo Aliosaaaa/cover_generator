@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KDP Cover Designer AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1a2e 50%, #16213e 100%);
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated background particles */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(2px 2px at 20% 30%, rgba(0, 255, 255, 0.3), transparent),
+                radial-gradient(2px 2px at 60% 70%, rgba(138, 43, 226, 0.3), transparent),
+                radial-gradient(1px 1px at 50% 50%, rgba(255, 0, 255, 0.3), transparent),
+                radial-gradient(1px 1px at 80% 10%, rgba(0, 191, 255, 0.3), transparent);
+            background-size: 200px 200px, 300px 300px, 150px 150px, 250px 250px;
+            animation: particleAnimation 20s linear infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes particleAnimation {
+            0% { background-position: 0 0, 0 0, 0 0, 0 0; }
+            100% { background-position: 200px 200px, -300px 300px, 150px -150px, -250px 250px; }
+        }
+
+        .container-main {
+            position: relative;
+            z-index: 1;
+        }
+
+        .glass-effect {
+            background: rgba(26, 32, 53, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 255, 255, 0.15);
+        }
+
+        .neon-border {
+            position: relative;
+            border: 2px solid transparent;
+            background: linear-gradient(rgba(26, 32, 53, 0.9), rgba(26, 32, 53, 0.9)) padding-box,
+                        linear-gradient(135deg, #00ffff, #8a2be2, #ff00ff) border-box;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3),
+                        inset 0 0 20px rgba(138, 43, 226, 0.1);
+        }
+
+        .title-glow {
+            font-family: 'Orbitron', sans-serif;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.8),
+                         0 0 20px rgba(138, 43, 226, 0.6),
+                         0 0 30px rgba(255, 0, 255, 0.4);
+            animation: titlePulse 3s ease-in-out infinite;
+        }
+
+        @keyframes titlePulse {
+            0%, 100% { text-shadow: 0 0 10px rgba(0, 255, 255, 0.8), 0 0 20px rgba(138, 43, 226, 0.6); }
+            50% { text-shadow: 0 0 20px rgba(0, 255, 255, 1), 0 0 40px rgba(138, 43, 226, 0.8); }
+        }
+
+        .loader {
+            border: 4px solid rgba(0, 255, 255, 0.2);
+            border-radius: 50%;
+            border-top: 4px solid #00ffff;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .thumbnail-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .thumbnail {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid #00ffff;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.4);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .thumbnail:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+        }
+
+        .hidden { display: none !important; }
+
+        .canvas-container {
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+            background: rgba(10, 14, 39, 0.5);
+            box-shadow: inset 0 0 20px rgba(138, 43, 226, 0.2);
+        }
+
+        input, textarea, select {
+            background: rgba(10, 14, 39, 0.8) !important;
+            border: 1px solid rgba(0, 255, 255, 0.3) !important;
+            color: #fff !important;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none !important;
+            border-color: #00ffff !important;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.4) !important;
+        }
+
+        button {
+            position: relative;
+            overflow: hidden;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        button:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 255, 255, 0.4);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00bfff, #8a2be2);
+            box-shadow: 0 4px 15px rgba(0, 191, 255, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #8a2be2, #ff00ff);
+            box-shadow: 0 4px 15px rgba(138, 43, 226, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #00ff88, #00cc88);
+            box-shadow: 0 4px 15px rgba(0, 255, 136, 0.4);
+        }
+
+        .btn-download {
+            background: linear-gradient(135deg, #00cccc, #0088aa);
+            box-shadow: 0 4px 15px rgba(0, 204, 204, 0.4);
+        }
+
+        .section-card {
+            background: rgba(26, 32, 53, 0.6);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .section-card:hover {
+            border-color: rgba(0, 255, 255, 0.5);
+            box-shadow: 0 12px 40px rgba(0, 255, 255, 0.2);
+        }
+
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            color: #00ffff;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+            font-weight: 700;
+        }
+
+        label {
+            color: #a0d8f1;
+            font-weight: 500;
+        }
+
+        .api-key-container {
+            background: linear-gradient(135deg, rgba(0, 191, 255, 0.1), rgba(138, 43, 226, 0.1));
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .api-key-saved {
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.1), rgba(0, 204, 136, 0.1));
+            border-color: rgba(0, 255, 136, 0.5);
+        }
+
+        footer {
+            background: rgba(10, 14, 39, 0.9);
+            border-top: 2px solid rgba(0, 255, 255, 0.3);
+            padding: 2rem;
+            text-align: center;
+            margin-top: 4rem;
+            font-family: 'Orbitron', sans-serif;
+            box-shadow: 0 -4px 20px rgba(0, 255, 255, 0.2);
+        }
+
+        .footer-text {
+            font-size: 1.1rem;
+            background: linear-gradient(135deg, #00ffff, #8a2be2, #ff00ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 700;
+        }
+
+        .divider {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ffff, transparent);
+            margin: 1.5rem 0;
+        }
+
+        #coverImage {
+            border: 3px solid rgba(0, 255, 255, 0.4);
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+        }
+
+        .placeholder-icon {
+            color: #00ffff;
+            opacity: 0.6;
+        }
+
+        ::placeholder {
+            color: rgba(160, 216, 241, 0.5) !important;
+        }
+
+        .eye-icon {
+            cursor: pointer;
+            color: #00ffff;
+            transition: all 0.3s ease;
+        }
+
+        .eye-icon:hover {
+            color: #8a2be2;
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body class="flex justify-center items-start min-h-screen p-4 sm:p-6 lg:p-8">
+
+    <div class="container-main w-full max-w-6xl mx-auto">
+        
+        <!-- API Key Section -->
+        <div id="apiKeySection" class="api-key-container mb-6">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="section-title text-xl">🔑 API Key Gemini (Nano Banana)</h3>
+            </div>
+            <div id="apiKeyInput" class="flex gap-3">
+                <div class="relative flex-1">
+                    <input type="password" id="apiKeyField" class="w-full px-4 py-3 rounded-lg font-mono text-sm" placeholder="Inserisci la tua API key di Google Gemini">
+                    <span id="toggleApiKey" class="eye-icon absolute right-3 top-1/2 transform -translate-y-1/2">
+                        👁️
+                    </span>
+                </div>
+                <button id="saveApiKeyBtn" class="btn-primary px-6 py-3 rounded-lg text-white">
+                    Salva Key
+                </button>
+            </div>
+            <div id="apiKeySaved" class="hidden mt-3 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="text-green-400">✅</span>
+                    <span class="text-green-300">API Key salvata con successo</span>
+                </div>
+                <button id="changeApiKeyBtn" class="text-cyan-400 hover:text-cyan-300 text-sm underline">
+                    Modifica Key
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Card -->
+        <div class="glass-effect neon-border rounded-2xl p-6 sm:p-8">
+            <div class="text-center mb-8">
+                <h1 class="title-glow text-4xl sm:text-5xl font-bold mb-3">
+                    KDP COVER DESIGNER AI
+                </h1>
+                <div class="divider"></div>
+                <p class="text-gray-300 text-lg mt-3">Il tuo assistente grafico per copertine bestseller su Amazon KDP.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Colonna Controlli -->
+                <div class="flex flex-col gap-6">
+                    
+                    <!-- Fase 1: Kindle -->
+                    <div id="phase1" class="section-card">
+                        <h2 class="section-title text-2xl mb-4 pb-3">
+                            <span class="text-2xl mr-2">📱</span> Fase 1: Crea la tua Cover Kindle
+                        </h2>
+                        <div class="divider mb-4"></div>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="title" class="block text-sm font-medium mb-2">Titolo</label>
+                                <input type="text" id="title" class="w-full px-4 py-3 rounded-lg" placeholder="Es. Il Segreto della Foresta Incantata">
+                            </div>
+                            <div>
+                                <label for="subtitle" class="block text-sm font-medium mb-2">Sottotitolo</label>
+                                <input type="text" id="subtitle" class="w-full px-4 py-3 rounded-lg" placeholder="Es. Una storia di magia e coraggio">
+                            </div>
+                            <div>
+                                <label for="claim" class="block text-sm font-medium mb-2">Claim o Bonus (opzionale)</label>
+                                <input type="text" id="claim" class="w-full px-4 py-3 rounded-lg" placeholder="Es. Include 3 capitoli extra!">
+                            </div>
+                            <div>
+                                <label for="penName" class="block text-sm font-medium mb-2">Nome d'Autore (opzionale)</label>
+                                <input type="text" id="penName" class="w-full px-4 py-3 rounded-lg" placeholder="Es. J.K. Rowling">
+                            </div>
+                            <div>
+                                <label for="graphicNotes" class="block text-sm font-medium mb-2">Note per il grafico (opzionale)</label>
+                                <textarea id="graphicNotes" rows="3" class="w-full px-4 py-3 rounded-lg" placeholder="Es. Voglio un'atmosfera dark fantasy, usa colori scuri..."></textarea>
+                            </div>
+                            <div>
+                                <label for="images" class="block text-sm font-medium mb-2">Carica fino a 3 immagini di ispirazione</label>
+                                <input type="file" id="images" multiple accept="image/*" class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gradient-to-r file:from-cyan-500 file:to-purple-500 file:text-white hover:file:opacity-80 file:cursor-pointer">
+                                <div id="thumbnails" class="thumbnail-container"></div>
+                            </div>
+                            <button id="generateKindleBtn" class="btn-primary w-full text-white font-bold py-4 px-6 rounded-lg mt-4">
+                                ⚡ Genera Cover Kindle
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Sezione Modifiche -->
+                    <div id="modificationSection" class="section-card hidden">
+                         <h3 class="section-title text-xl mb-3">
+                            <span class="text-xl mr-2">✨</span> Modifica la cover
+                         </h3>
+                         <div class="divider mb-4"></div>
+                         <p class="text-gray-400 text-sm mb-4">Descrivi le modifiche che vuoi applicare.</p>
+                         <textarea id="modificationPrompt" rows="3" class="w-full px-4 py-3 rounded-lg" placeholder="Es. 'Usa un font più gotico per il titolo'"></textarea>
+                         <button id="modifyBtn" class="btn-secondary w-full mt-4 text-white font-bold py-3 px-4 rounded-lg">
+                            🎨 Applica Modifica
+                         </button>
+                         <button id="downloadKindleBtn" class="btn-download w-full mt-3 text-white font-bold py-3 px-4 rounded-lg">
+                            💾 Download Cover Kindle (JPG)
+                         </button>
+                         <button id="acceptBtn" class="btn-success w-full mt-3 text-white font-bold py-3 px-4 rounded-lg">
+                            ✓ Accetta e Procedi al Formato Cartaceo
+                         </button>
+                    </div>
+
+                    <!-- Fase 2: Paperback/Hardcover -->
+                    <div id="printCreationPhase" class="hidden flex flex-col gap-6">
+                        <!-- Note per il Retro -->
+                        <div class="section-card">
+                            <h3 class="section-title text-xl mb-3">
+                                <span class="text-xl mr-2">📝</span> Note per il Retro della Cover
+                            </h3>
+                            <div class="divider mb-4"></div>
+                            <p class="text-gray-400 text-sm mb-4">Aggiungi istruzioni per il retro (es. sinossi, biografia). Saranno usate per entrambe le versioni.</p>
+                            <textarea id="backCoverNotes" rows="4" class="w-full px-4 py-3 rounded-lg" placeholder="Es. Inserisci questa sinossi: '...' Aggiungi una piccola foto dell'autore..."></textarea>
+                        </div>
+
+                        <!-- Blocco Paperback -->
+                        <div id="paperbackPhase" class="section-card">
+                             <h2 class="section-title text-2xl mb-4 pb-3">
+                                <span class="text-2xl mr-2">📖</span> Crea Cover Paperback (flessibile)
+                             </h2>
+                             <div class="divider mb-4"></div>
+                             <div class="space-y-4">
+                                 <div>
+                                    <label for="paperbackTrimSize" class="block text-sm font-medium mb-2">Formato Libro (Trim Size)</label>
+                                    <select id="paperbackTrimSize" class="w-full px-4 py-3 rounded-lg">
+                                        <option value="5x8">5" x 8" (12.7 x 20.32 cm)</option>
+                                        <option value="5.5x8.5">5.5" x 8.5" (13.97 x 21.59 cm)</option>
+                                        <option value="6x9" selected>6" x 9" (15.24 x 22.86 cm)</option>
+                                        <option value="8.5x11">8.5" x 11" (21.59 x 27.94 cm)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="paperbackPages" class="block text-sm font-medium mb-2">Numero di pagine</label>
+                                    <input type="number" id="paperbackPages" class="w-full px-4 py-3 rounded-lg" placeholder="Es. 250">
+                                </div>
+                                <button id="generatePaperbackBtn" class="btn-primary w-full text-white font-bold py-4 px-6 rounded-lg">
+                                    ⚡ Genera Cover Paperback
+                                </button>
+                             </div>
+                        </div>
+                    
+                        <!-- Blocco Hardcover -->
+                        <div id="hardcoverPhase" class="section-card">
+                            <h2 class="section-title text-2xl mb-4 pb-3">
+                                <span class="text-2xl mr-2">📕</span> Crea Cover Hardcover (rigida)
+                            </h2>
+                            <div class="divider mb-4"></div>
+                            <div class="space-y-4">
+                                <div>
+                                    <label for="hardcoverTrimSize" class="block text-sm font-medium mb-2">Formato Libro (Trim Size)</label>
+                                    <select id="hardcoverTrimSize" class="w-full px-4 py-3 rounded-lg">
+                                        <option value="5.5x8.5">5.5" x 8.5" (13.97 x 21.59 cm)</option>
+                                        <option value="6x9" selected>6" x 9" (15.24 x 22.86 cm)</option>
+                                        <option value="6.14x9.21">6.14" x 9.21" (15.6 x 23.39 cm)</option>
+                                        <option value="7x10">7" x 10" (17.78 x 25.4 cm)</option>
+                                        <option value="8.25x11">8.25" x 11" (20.96 x 27.94 cm)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="hardcoverPages" class="block text-sm font-medium mb-2">Numero di pagine</label>
+                                    <input type="number" id="hardcoverPages" class="w-full px-4 py-3 rounded-lg" placeholder="Es. 250">
+                                </div>
+                                <button id="generateHardcoverBtn" class="btn-primary w-full text-white font-bold py-4 px-6 rounded-lg">
+                                    ⚡ Genera Cover Hardcover
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Colonna Risultati -->
+                <div id="resultsColumn" class="section-card flex flex-col justify-center items-center min-h-[500px]">
+                    <div id="loader" class="loader hidden"></div>
+                    <div id="placeholder" class="text-center">
+                        <svg class="placeholder-icon mx-auto h-16 w-16 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <p class="text-gray-400 text-lg">L'anteprima della tua copertina apparirà qui.</p>
+                    </div>
+                    <img id="coverImage" class="hidden max-w-full max-h-[500px] rounded-lg shadow-lg" alt="Generated Cover">
+                    
+                    <div id="print-previews" class="w-full">
+                        <div id="paperback_container" class="hidden canvas-container">
+                            <h4 class="section-title text-lg text-center mb-3">Anteprima Paperback</h4>
+                            <canvas id="paperbackCanvas" class="max-w-full rounded-lg shadow-lg mx-auto"></canvas>
+                        </div>
+                        <div id="hardcover_container" class="hidden canvas-container">
+                            <h4 class="section-title text-lg text-center mb-3">Anteprima Hardcover</h4>
+                            <canvas id="hardcoverCanvas" class="max-w-full rounded-lg shadow-lg mx-auto"></canvas>
+                        </div>
+                    </div>
+
+                    <button id="downloadAllBtn" class="btn-success hidden mt-6 text-white font-bold py-4 px-8 rounded-lg">
+                        📦 Download Pacchetto Completo (.zip)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer>
+            <div class="footer-text text-2xl mb-2">
+                AI OSHA × KARMA WRITERS
+            </div>
+            <div class="text-gray-400 text-sm">
+                Powered by Gemini Nano Banana API
+            </div>
+        </footer>
+
+    </div>
+
+    <script>
+        // DOM Elements
+        const generateKindleBtn = document.getElementById('generateKindleBtn');
+        const modifyBtn = document.getElementById('modifyBtn');
+        const acceptBtn = document.getElementById('acceptBtn');
+        const downloadKindleBtn = document.getElementById('downloadKindleBtn');
+        const downloadAllBtn = document.getElementById('downloadAllBtn');
+        const generatePaperbackBtn = document.getElementById('generatePaperbackBtn');
+        const generateHardcoverBtn = document.getElementById('generateHardcoverBtn');
+
+        // API Key elements
+        const apiKeyField = document.getElementById('apiKeyField');
+        const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const apiKeySaved = document.getElementById('apiKeySaved');
+        const changeApiKeyBtn = document.getElementById('changeApiKeyBtn');
+        const toggleApiKey = document.getElementById('toggleApiKey');
+        const apiKeySection = document.getElementById('apiKeySection');
+
+        // ... input elements ...
+        const titleInput = document.getElementById('title');
+        const subtitleInput = document.getElementById('subtitle');
+        const claimInput = document.getElementById('claim');
+        const imageInput = document.getElementById('images');
+        const modificationPrompt = document.getElementById('modificationPrompt');
+        const penNameInput = document.getElementById('penName');
+        const graphicNotesInput = document.getElementById('graphicNotes');
+        const paperbackTrimSizeSelect = document.getElementById('paperbackTrimSize');
+        const paperbackPagesInput = document.getElementById('paperbackPages');
+        const hardcoverTrimSizeSelect = document.getElementById('hardcoverTrimSize');
+        const hardcoverPagesInput = document.getElementById('hardcoverPages');
+        const backCoverNotesInput = document.getElementById('backCoverNotes');
+
+        // ... result elements ...
+        const loader = document.getElementById('loader');
+        const placeholder = document.getElementById('placeholder');
+        const coverImage = document.getElementById('coverImage');
+        const paperbackCanvas = document.getElementById('paperbackCanvas');
+        const hardcoverCanvas = document.getElementById('hardcoverCanvas');
+        const paperbackContainer = document.getElementById('paperback_container');
+        const hardcoverContainer = document.getElementById('hardcover_container');
+
+        // ... sections ...
+        const phase1Div = document.getElementById('phase1');
+        const printCreationPhaseDiv = document.getElementById('printCreationPhase');
+        const modificationSection = document.getElementById('modificationSection');
+        const thumbnailsDiv = document.getElementById('thumbnails');
+
+        // State variables
+        let uploadedImages = [];
+        let currentKindleCoverB64 = null;
+        let paperbackGenerated = false;
+        let hardcoverGenerated = false;
+        let apiKey = localStorage.getItem('geminiApiKey') || "";
+
+        // Check if API key exists
+        if (apiKey) {
+            apiKeyInput.classList.add('hidden');
+            apiKeySaved.classList.remove('hidden');
+            apiKeySection.classList.add('api-key-saved');
+        }
+
+        // API Key functionality
+        saveApiKeyBtn.addEventListener('click', () => {
+            const key = apiKeyField.value.trim();
+            if (key) {
+                apiKey = key;
+                localStorage.setItem('geminiApiKey', key);
+                apiKeyInput.classList.add('hidden');
+                apiKeySaved.classList.remove('hidden');
+                apiKeySection.classList.add('api-key-saved');
+                alert('API Key salvata con successo! ✅');
+            } else {
+                alert('Per favore, inserisci una API key valida.');
+            }
+        });
+
+        changeApiKeyBtn.addEventListener('click', () => {
+            apiKeyField.value = '';
+            apiKeyInput.classList.remove('hidden');
+            apiKeySaved.classList.add('hidden');
+            apiKeySection.classList.remove('api-key-saved');
+        });
+
+        toggleApiKey.addEventListener('click', () => {
+            if (apiKeyField.type === 'password') {
+                apiKeyField.type = 'text';
+                toggleApiKey.textContent = '🙈';
+            } else {
+                apiKeyField.type = 'password';
+                toggleApiKey.textContent = '👁️';
+            }
+        });
+
+        // --- API Call Logic ---
+        async function callNanoBananaAPI(prompt, images = []) {
+            if (!apiKey) {
+                alert('Per favore, inserisci prima la tua API key di Gemini.');
+                return null;
+            }
+            
+            showLoader(true);
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${apiKey}`;
+            const contents = [{ parts: [{ text: prompt }] }];
+            images.forEach(img => { contents[0].parts.push({ inlineData: { mimeType: img.type, data: img.data } }); });
+            const payload = { contents: contents, generationConfig: { responseModalities: ['TEXT', 'IMAGE'] } };
+            try {
+                let response; let attempts = 0; let delay = 1000;
+                while (attempts < 5) {
+                    response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    if (response.ok) break;
+                    if (response.status === 429 || response.status >= 500) {
+                        console.warn(`Request failed with status ${response.status}. Retrying in ${delay / 1000}s...`);
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        delay *= 2; attempts++;
+                    } else { throw new Error(`API request failed with status: ${response.status}`); }
+                }
+                if (!response.ok) { throw new Error(`API request failed after multiple retries. Status: ${response.status}`); }
+                const result = await response.json();
+                if (!result.candidates || result.candidates.length === 0) {
+                    const feedback = result.promptFeedback;
+                    let msg = "L'API non ha restituito candidati.";
+                    if (feedback?.blockReason) { msg += ` Motivo: ${feedback.blockReason}.`; }
+                    throw new Error(msg);
+                }
+                const candidate = result.candidates[0];
+                const base64Data = candidate.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+                if (!base64Data) {
+                    let msg = "Nessuna immagine generata dall'API.";
+                    if (candidate.finishReason === 'SAFETY') {
+                        msg = "La richiesta è stata bloccata per motivi di sicurezza. Prova a modificare il testo del titolo o degli altri campi.";
+                    } else if (candidate.finishReason === 'STOP') {
+                        msg = "L'IA non è riuscita a generare un'immagine questa volta. Prova a cliccare di nuovo su 'Genera' o a modificare leggermente il testo.";
+                    } else if (candidate.finishReason) {
+                        msg += ` Motivo: ${candidate.finishReason}.`;
+                    }
+                    throw new Error(msg);
+                }
+                return `data:image/png;base64,${base64Data}`;
+            } catch (error) {
+                console.error('API Call Error:', error);
+                alert(error.message || 'Errore durante la generazione. Controlla la console.');
+                return null;
+            } finally {
+                showLoader(false);
+            }
+        }
+
+        // --- Event Listeners ---
+        imageInput.addEventListener('change', handleImageUpload);
+        generateKindleBtn.addEventListener('click', generateKindleCover);
+        modifyBtn.addEventListener('click', modifyKindleCover);
+        acceptBtn.addEventListener('click', acceptAndProceed);
+        downloadKindleBtn.addEventListener('click', downloadKindleCoverJPG);
+        generatePaperbackBtn.addEventListener('click', () => generatePrintCover('paperback'));
+        generateHardcoverBtn.addEventListener('click', () => generatePrintCover('hardcover'));
+        downloadAllBtn.addEventListener('click', downloadAll);
+
+        // --- Functions ---
+        function handleImageUpload(event) {
+            uploadedImages = [];
+            thumbnailsDiv.innerHTML = '';
+            const files = Array.from(event.target.files).slice(0, 3);
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const base64String = e.target.result.split(',')[1];
+                    uploadedImages.push({ type: file.type, data: base64String });
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.classList.add('thumbnail');
+                    thumbnailsDiv.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        async function generateKindleCover() {
+            const title = titleInput.value;
+            if (!title) { alert('Per favore, inserisci almeno un titolo.'); return; }
+            let prompt = `Crea una copertina di libro professionale per un ebook Amazon KDP (formato verticale, proporzioni 1.6:1).
+
+Integra i seguenti testi con un design eccellente:
+- Titolo: "${title}"
+- Sottotitolo: "${subtitleInput.value}"
+- Nome d'Autore: "${penNameInput.value}"
+- Claim/Bonus: "${claimInput.value}"
+- Note di stile: "${graphicNotesInput.value}"
+
+Linee guida fondamentali:
+- **Testo Perfetto:** Nessun errore di ortografia.
+- **Massima Leggibilità:** Usa font chiari con alto contrasto rispetto allo sfondo.
+- **Composizione Pulita:** Evita la sovrapposizione di elementi testuali. Il titolo deve essere l'elemento principale.
+
+Genera esclusivamente l'immagine della copertina.`;
+            if (uploadedImages.length > 0) { prompt += "\nUsa le immagini caricate come forte ispirazione per stile e colori." }
+            const generatedImageB64 = await callNanoBananaAPI(prompt, uploadedImages);
+            if (generatedImageB64) {
+                currentKindleCoverB64 = generatedImageB64;
+                displayImage(currentKindleCoverB64);
+                modificationSection.classList.remove('hidden');
+                hidePrintPreviews();
+            }
+        }
+
+        async function modifyKindleCover() {
+            const modPrompt = modificationPrompt.value;
+            if (!modPrompt || !currentKindleCoverB64) { alert('Scrivi una modifica e genera prima una copertina.'); return; }
+            const prompt = `Applica questa modifica all'immagine della copertina fornita: "${modPrompt}". Mantieni lo stile generale ma assicurati che il testo sia di alta qualità, leggibile e con un buon contrasto. Genera solo l'immagine modificata.`;
+            const imageForModification = { type: 'image/png', data: currentKindleCoverB64.split(',')[1] };
+            const generatedImageB64 = await callNanoBananaAPI(prompt, [imageForModification]);
+            if (generatedImageB64) { currentKindleCoverB64 = generatedImageB64; displayImage(currentKindleCoverB64); }
+        }
+
+        function acceptAndProceed() {
+            phase1Div.classList.add('hidden');
+            modificationSection.classList.add('hidden');
+            printCreationPhaseDiv.classList.remove('hidden');
+        }
+
+        function downloadKindleCoverJPG() {
+            if (!currentKindleCoverB64) { alert("Nessuna cover da scaricare."); return; }
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0,0,canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0);
+                const link = document.createElement('a');
+                link.download = `${titleInput.value.replace(/ /g, '_')}_kindle_cover.jpg`;
+                link.href = canvas.toDataURL('image/jpeg', 0.9);
+                link.click();
+            };
+            img.src = currentKindleCoverB64;
+        }
+        
+        // ** REFACTORED COVER CALCULATION AND ASSEMBLY LOGIC **
+        async function generatePrintCover(coverType) {
+            const pagesInput = coverType === 'paperback' ? paperbackPagesInput : hardcoverPagesInput;
+            const trimSizeSelect = coverType === 'paperback' ? paperbackTrimSizeSelect : hardcoverTrimSizeSelect;
+
+            const pages = parseInt(pagesInput.value, 10);
+            const minPages = coverType === 'paperback' ? 24 : 75;
+            if (!pages || pages < minPages) {
+                 alert(`Il numero di pagine deve essere almeno ${minPages} per una copertina ${coverType}.`);
+                 return;
+            }
+            if (!currentKindleCoverB64) { alert("Genera e accetta prima una cover Kindle."); return; }
+            
+            const [trimWidthIn, trimHeightIn] = trimSizeSelect.value.split('x').map(parseFloat);
+            const DPI = 300;
+            
+            let specs = {};
+
+            if (coverType === 'paperback') {
+                const bleedIn = 0.125;
+                const spineWidthIn = pages * 0.002252; // Cream paper assumption
+
+                const totalWidthIn = (trimWidthIn * 2) + spineWidthIn + (bleedIn * 2);
+                const totalHeightIn = trimHeightIn + (bleedIn * 2);
+
+                const bleedPx = Math.round(bleedIn * DPI);
+                const trimWidthPx = Math.round(trimWidthIn * DPI);
+                const trimHeightPx = Math.round(trimHeightIn * DPI);
+                const spinePx = Math.round(spineWidthIn * DPI);
+                
+                specs = {
+                    totalWidthPx: Math.round(totalWidthIn * DPI),
+                    totalHeightPx: Math.round(totalHeightIn * DPI),
+                    backCover: { x: 0, y: 0, width: bleedPx + trimWidthPx, height: Math.round(totalHeightIn * DPI) },
+                    spine: { x: bleedPx + trimWidthPx, y: 0, width: spinePx, height: Math.round(totalHeightIn * DPI) },
+                    frontCover: { x: bleedPx + trimWidthPx + spinePx, y: 0, width: trimWidthPx + bleedPx, height: Math.round(totalHeightIn * DPI) }
+                };
+            } else { // hardcover
+                const wrapIn = 0.625;
+                const hingeIn = 0.375;
+                const spineWidthIn = pages * 0.0025; // White paper assumption
+
+                const totalWidthIn = (trimWidthIn * 2) + spineWidthIn + (wrapIn * 2) + (hingeIn * 2);
+                const totalHeightIn = trimHeightIn + (wrapIn * 2);
+                
+                const wrapPx = Math.round(wrapIn * DPI);
+                const trimWidthPx = Math.round(trimWidthIn * DPI);
+                const hingePx = Math.round(hingeIn * DPI);
+                const spinePx = Math.round(spineWidthIn * DPI);
+                
+                specs = {
+                    totalWidthPx: Math.round(totalWidthIn * DPI),
+                    totalHeightPx: Math.round(totalHeightIn * DPI),
+                    backCover: { x: 0, y: 0, width: wrapPx + trimWidthPx, height: Math.round(totalHeightIn * DPI) },
+                    leftHinge: { x: wrapPx + trimWidthPx, y: 0, width: hingePx, height: Math.round(totalHeightIn * DPI) },
+                    spine: { x: wrapPx + trimWidthPx + hingePx, y: 0, width: spinePx, height: Math.round(totalHeightIn * DPI) },
+                    rightHinge: { x: wrapPx + trimWidthIn + hingePx + spinePx, y: 0, width: hingePx, height: Math.round(totalHeightIn * DPI) },
+                    frontCover: { x: wrapPx + trimWidthIn + hingePx + spinePx + hingePx, y: 0, width: trimWidthPx + wrapPx, height: Math.round(totalHeightIn * DPI) }
+                };
+            }
+            await processAndAssemble(coverType, specs);
+        }
+
+        async function processAndAssemble(coverType, specs) {
+            const backNotes = backCoverNotesInput.value;
+            let backCoverPrompt = `Crea il design per il retro di una copertina di libro, basandoti sulla copertina frontale fornita.
+Linee guida essenziali:
+1. **Stile Coerente:** Lo stile, i colori e l'atmosfera devono essere identici alla copertina frontale.
+2. **Area Codice a Barre:** L'angolo in basso a destra DEVE essere lasciato libero per il codice a barre. Disegna solo lo sfondo in quest'area, senza testo o elementi grafici.
+3. **Qualità del Testo:** Se vengono fornite note per includere del testo, questo deve essere senza errori, con alto contrasto e ben posizionato.`;
+
+            if (backNotes) {
+                backCoverPrompt += `\n\nIstruzioni specifiche dall'utente per il retro: "${backNotes}"`;
+            }
+            backCoverPrompt += "\n\nGenera solo l'immagine del retro, nient'altro.";
+
+            const frontCoverForApi = { type: 'image/png', data: currentKindleCoverB64.split(',')[1] };
+            const backCoverB64 = await callNanoBananaAPI(backCoverPrompt, [frontCoverForApi]);
+            if (!backCoverB64) { alert("Impossibile generare il retro della copertina."); return; }
+
+            const targetCanvas = coverType === 'paperback' ? paperbackCanvas : hardcoverCanvas;
+            const targetContainer = coverType === 'paperback' ? paperbackContainer : hardcoverContainer;
+            
+            await assembleOnCanvas(targetCanvas, specs, backCoverB64);
+            targetContainer.classList.remove('hidden');
+
+            if(coverType === 'paperback') paperbackGenerated = true;
+            if(coverType === 'hardcover') hardcoverGenerated = true;
+            
+            downloadAllBtn.classList.remove('hidden');
+            coverImage.classList.add('hidden');
+            placeholder.classList.add('hidden');
+        }
+
+        function assembleOnCanvas(canvas, specs, backCoverB64) {
+             return new Promise((resolve) => {
+                showLoader(true);
+                const ctx = canvas.getContext('2d');
+                canvas.width = specs.totalWidthPx;
+                canvas.height = specs.totalHeightPx;
+                
+                const frontImg = new Image(); frontImg.src = currentKindleCoverB64;
+                const backImg = new Image(); backImg.src = backCoverB64;
+                
+                let imagesLoaded = 0;
+                const onImageLoad = () => {
+                    imagesLoaded++;
+                    if (imagesLoaded === 2) {
+                        ctx.fillStyle = '#FFFFFF'; 
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        
+                        // Disegna le immagini di fronte e retro nelle loro aree calcolate
+                        ctx.drawImage(backImg, specs.backCover.x, specs.backCover.y, specs.backCover.width, specs.backCover.height);
+                        ctx.drawImage(frontImg, specs.frontCover.x, specs.frontCover.y, specs.frontCover.width, specs.frontCover.height);
+                        
+                        // Campiona un colore per la spina (e le cerniere)
+                        const p = ctx.getImageData(specs.frontCover.x + 1, canvas.height / 2, 1, 1).data;
+                        const spineColor = `rgb(${p[0]}, ${p[1]}, ${p[2]})`;
+                        ctx.fillStyle = spineColor;
+
+                        // Disegna la spina e le eventuali cerniere
+                        ctx.fillRect(specs.spine.x, specs.spine.y, specs.spine.width, specs.spine.height);
+                        if (specs.leftHinge) {
+                            ctx.fillRect(specs.leftHinge.x, specs.leftHinge.y, specs.leftHinge.width, specs.leftHinge.height);
+                            ctx.fillRect(specs.rightHinge.x, specs.rightHinge.y, specs.rightHinge.width, specs.rightHinge.height);
+                        }
+                        
+                        // Disegna il testo sulla spina
+                        if (specs.spine.width > 30) {
+                            ctx.save();
+                            ctx.translate(specs.spine.x + specs.spine.width / 2, canvas.height / 2);
+                            ctx.rotate(-Math.PI / 2);
+                            const luminance = (0.299 * p[0] + 0.587 * p[1] + 0.114 * p[2]) / 255;
+                            ctx.fillStyle = luminance > 0.5 ? 'black' : 'white';
+                            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                            
+                            const titleText = titleInput.value;
+                            const penNameText = penNameInput.value;
+
+                            if (penNameText) {
+                                let titleFontSize = Math.min(specs.spine.width * 0.5, 40);
+                                ctx.font = `bold ${titleFontSize}px sans-serif`;
+                                ctx.fillText(titleText, -canvas.height * 0.25, 0);
+
+                                let penNameFontSize = Math.min(specs.spine.width * 0.4, 30);
+                                ctx.font = `normal ${penNameFontSize}px sans-serif`;
+                                ctx.fillText(penNameText, canvas.height * 0.25, 0);
+                            } else {
+                                let titleFontSize = Math.min(specs.spine.width * 0.6, 60);
+                                ctx.font = `bold ${titleFontSize}px sans-serif`;
+                                ctx.fillText(titleText, 0, 0);
+                            }
+                            ctx.restore();
+                        }
+                        showLoader(false); resolve();
+                    }
+                };
+                frontImg.onload = backImg.onload = onImageLoad;
+                frontImg.onerror = () => { alert("Error loading front cover"); showLoader(false); }
+                backImg.onerror = () => { alert("Error loading back cover"); showLoader(false); }
+            });
+        }
+        
+        async function downloadAll() {
+            const zip = new JSZip();
+            const title = titleInput.value.replace(/ /g, '_') || 'cover';
+
+            if (currentKindleCoverB64) {
+                const jpgData = await new Promise(resolve => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width; canvas.height = img.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0,0,canvas.width, canvas.height);
+                        ctx.drawImage(img, 0, 0);
+                        resolve(canvas.toDataURL('image/jpeg', 0.9).split(',')[1]);
+                    };
+                    img.src = currentKindleCoverB64;
+                });
+                zip.file(`${title}_kindle.jpg`, jpgData, { base64: true });
+            }
+
+            if (paperbackGenerated) {
+                const paperbackData = paperbackCanvas.toDataURL('image/png').split(',')[1];
+                zip.file(`${title}_paperback.png`, paperbackData, { base64: true });
+            }
+
+            if (hardcoverGenerated) {
+                const hardcoverData = hardcoverCanvas.toDataURL('image/png').split(',')[1];
+                zip.file(`${title}_hardcover.png`, hardcoverData, { base64: true });
+            }
+
+            zip.generateAsync({ type: "blob" }).then(function(content) {
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(content);
+                link.download = `${title}_covers.zip`;
+                link.click();
+                URL.revokeObjectURL(link.href);
+            });
+        }
+        
+        function showLoader(show) {
+            loader.classList.toggle('hidden', !show);
+            if(show) {
+                placeholder.classList.add('hidden');
+                coverImage.classList.add('hidden');
+            }
+        }
+        
+        function displayImage(imageBase64) {
+            placeholder.classList.add('hidden');
+            hidePrintPreviews();
+            coverImage.src = imageBase64;
+            coverImage.classList.remove('hidden');
+        }
+
+        function hidePrintPreviews() {
+            paperbackContainer.classList.add('hidden');
+            hardcoverContainer.classList.add('hidden');
+            if (!paperbackGenerated && !hardcoverGenerated) {
+                downloadAllBtn.classList.add('hidden');
+            }
+        }
+
+    </script>
+</body>
+</html>
