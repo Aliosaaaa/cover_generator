@@ -4,10 +4,12 @@ Software intelligente per l'inserimento automatico di immagini e infografiche in
 
 ## 🎯 Caratteristiche
 
-- **Analisi Automatica**: Analizza il tuo documento DOCX e identifica automaticamente dove sono necessarie immagini o infografiche
-- **Suggerimenti Intelligenti**: L'AI suggerisce il tipo di immagine più appropriato (immagine, infografica, diagramma, grafico)
-- **Controllo Totale**: Selezioni tu quali immagini generare con un sistema di checkbox intuitivo
-- **Generazione AI**: Genera automaticamente le immagini usando Gemini 2.5 Flash Image Preview
+- **Analisi Automatica Avanzata**: Analizza il tuo documento DOCX e identifica **1-8 opportunità visive per ogni capitolo** (garantito!)
+- **AI Proattiva**: L'AI cerca attivamente concetti astratti, processi, dati, scene, metafore e momenti chiave da visualizzare
+- **Suggerimenti Intelligenti**: 4 tipi di immagini (immagine, infografica, diagramma, grafico) con descrizioni dettagliate
+- **Testo Perfetto nelle Immagini**: Prompt ottimizzati per generare testo perfettamente leggibile senza errori nelle infografiche e diagrammi
+- **Controllo Totale**: Selezioni tu quali immagini generare con sistema di checkbox intuitivo
+- **Generazione AI Professionale**: Usa Gemini 2.5 Flash Image Preview con prompt avanzati per qualità massima
 - **Inserimento Automatico**: Le immagini vengono inserite nel documento nella posizione ottimale
 - **Download DOCX**: Scarica il documento completo con tutte le immagini inserite
 
@@ -31,8 +33,11 @@ Software intelligente per l'inserimento automatico di immagini e infografiche in
 Dopo l'analisi vedrai un report organizzato per capitoli con:
 - **Tipo di immagine** (immagine, infografica, diagramma, grafico)
 - **Posizione suggerita** (inizio, metà, fine del capitolo)
-- **Descrizione** di cosa dovrebbe rappresentare
+- **Descrizione dettagliata** di cosa dovrebbe rappresentare
 - **Motivo** per cui è necessaria
+- **Testo da includere** (quando applicabile) - il testo esatto da inserire nell'immagine
+
+**IMPORTANTE**: Ogni capitolo avrà **minimo 1 e massimo 8 suggerimenti** - l'AI è stata ottimizzata per essere proattiva!
 
 Seleziona le immagini che vuoi generare usando le checkbox.
 
