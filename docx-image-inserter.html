@@ -677,31 +677,49 @@
         }
 
         async function analyzeChapterWithAI(chapter, chapterNumber) {
-            const prompt = `Analizza il seguente testo di un capitolo e determina se sono necessarie immagini o infografiche per migliorare la comprensione.
+            const prompt = `Sei un esperto di design editoriale. Analizza il seguente testo e identifica DOVE inserire immagini o infografiche per rendere il contenuto più comprensibile e visivamente accattivante.
 
-Per ogni immagine/infografica suggerita, fornisci:
-1. TIPO: "immagine", "infografica", "diagramma", o "grafico"
-2. POSIZIONE: dove dovrebbe essere inserita (inizio, metà, fine del capitolo)
-3. DESCRIZIONE: breve descrizione di cosa dovrebbe rappresentare
-4. MOTIVO: perché è necessaria
+IMPORTANTE: Devi suggerire ALMENO 1 e MASSIMO 8 immagini/infografiche per questo capitolo.
 
-Rispondi SOLO in formato JSON valido, come array di oggetti:
+Cerca opportunità per visualizzare:
+- Concetti astratti che possono essere illustrati
+- Processi o sequenze che possono diventare diagrammi di flusso
+- Dati o statistiche che possono essere grafici
+- Scene o ambientazioni che possono essere illustrate
+- Confronti che possono diventare tabelle visive
+- Esempi pratici che meritano un'illustrazione
+- Momenti chiave della narrazione
+- Metafore o simboli che possono essere rappresentati visivamente
+
+Per OGNI suggerimento fornisci:
+1. TIPO: scegli tra "immagine", "infografica", "diagramma", "grafico"
+2. POSIZIONE: "inizio", "metà", o "fine" del capitolo
+3. DESCRIPTION: descrizione dettagliata e specifica di cosa rappresentare
+4. REASON: spiega perché migliora la comprensione
+5. TEXT_CONTENT: se l'immagine deve contenere testo (es. infografica, diagramma), specifica ESATTAMENTE il testo da includere
+
+Rispondi SOLO in formato JSON valido:
 [
   {
-    "type": "immagine",
+    "type": "infografica",
     "position": "inizio",
-    "description": "Illustrazione di...",
-    "reason": "Aiuta a visualizzare...",
+    "description": "Infografica che mostra i 5 passi del processo",
+    "reason": "Fornisce una panoramica visiva immediata",
+    "textContent": "Passo 1: Analisi|Passo 2: Pianificazione|Passo 3: Esecuzione|Passo 4: Verifica|Passo 5: Ottimizzazione",
     "chapter": ${chapterNumber},
     "chapterTitle": "${chapter.title}"
   }
 ]
 
-Se NON sono necessarie immagini/infografiche, rispondi con un array vuoto: []
+REGOLE:
+- Minimo 1 suggerimento, massimo 8 suggerimenti
+- Sii creativo e proattivo nel trovare opportunità visive
+- Preferisci la varietà: alterna immagini, infografiche, diagrammi, grafici
+- Se non c'è testo da includere, usa "textContent": ""
 
 Testo del capitolo:
 ---
-${chapter.content.substring(0, 4000)}
+${chapter.content.substring(0, 5000)}
 ---`;
 
             try {
@@ -852,6 +870,10 @@ ${chapter.content.substring(0, 4000)}
                     suggestionDiv.className = 'suggestion-item flex items-start gap-3';
 
                     const badgeClass = `badge-${suggestion.type}`;
+                    const textContentHtml = suggestion.textContent && suggestion.textContent.trim()
+                        ? `<p class="text-cyan-300 text-sm mt-1"><strong>📝 Testo da includere:</strong> ${suggestion.textContent}</p>`
+                        : '';
+
                     suggestionDiv.innerHTML = `
                         <input type="checkbox" class="checkbox-custom mt-1" data-suggestion-id="${suggestion.id}">
                         <div class="flex-1">
@@ -861,6 +883,7 @@ ${chapter.content.substring(0, 4000)}
                             </div>
                             <p class="text-gray-200 mb-1"><strong>Descrizione:</strong> ${suggestion.description}</p>
                             <p class="text-gray-400 text-sm"><strong>Motivo:</strong> ${suggestion.reason}</p>
+                            ${textContentHtml}
                         </div>
                     `;
 
@@ -936,27 +959,98 @@ ${chapter.content.substring(0, 4000)}
 
         function createImagePrompt(suggestion) {
             let prompt = '';
+            const hasText = suggestion.textContent && suggestion.textContent.trim() !== '';
 
             switch (suggestion.type) {
                 case 'immagine':
                     prompt = `Crea un'immagine professionale e di alta qualità che rappresenti: ${suggestion.description}.
-                    Stile: fotografico, realistico, adatto per un documento professionale.`;
+
+REQUISITI FONDAMENTALI:
+- Stile: fotografico, realistico, adatto per un documento professionale
+- Composizione: bilanciata e chiara
+- Qualità: alta risoluzione, nitida
+- Colori: armoniosi e professionali`;
                     break;
+
                 case 'infografica':
-                    prompt = `Crea un'infografica chiara e professionale che illustri: ${suggestion.description}.
-                    Stile: moderno, pulito, con testo leggibile e grafica vettoriale.`;
+                    prompt = `Crea un'infografica professionale che illustri: ${suggestion.description}.
+
+REQUISITI FONDAMENTALI PER IL TESTO:
+- Il testo DEVE essere PERFETTAMENTE leggibile e senza errori
+- Font: Sans-serif moderno, pulito, professionale
+- Dimensione testo: Grande e chiara
+- Contrasto: Alto contrasto tra testo e sfondo
+- Allineamento: Perfetto e ordinato
+- Ortografia: ZERO errori, testo ESATTAMENTE come specificato
+
+STILE VISIVO:
+- Design: Moderno, minimalista, professionale
+- Layout: Pulito con ampio spazio bianco
+- Colori: Palette armoniosa (max 3-4 colori)
+- Icone: Semplici e chiare
+- Gerarchia visiva: Chiara e intuitiva`;
+
+                    if (hasText) {
+                        prompt += `\n\nTESTO DA INCLUDERE (copialo ESATTAMENTE così):\n${suggestion.textContent}`;
+                    }
                     break;
+
                 case 'diagramma':
                     prompt = `Crea un diagramma tecnico e schematico che mostri: ${suggestion.description}.
-                    Stile: pulito, con etichette chiare, linee nitide.`;
+
+REQUISITI FONDAMENTALI PER IL TESTO:
+- Tutte le etichette devono essere PERFETTAMENTE leggibili
+- Font: Sans-serif, chiaro, dimensione adeguata
+- Ogni elemento deve avere un'etichetta chiara
+- Zero errori di ortografia
+- Testo ESATTAMENTE come specificato
+
+STILE DIAGRAMMA:
+- Linee: Nitide, uniformi, ben definite
+- Forme: Geometriche precise
+- Frecce: Chiare e direzionali
+- Connessioni: Ben visibili
+- Layout: Logico e ordinato
+- Sfondo: Bianco o neutro`;
+
+                    if (hasText) {
+                        prompt += `\n\nETICHETTE E TESTO (usa ESATTAMENTE questo testo):\n${suggestion.textContent}`;
+                    }
                     break;
+
                 case 'grafico':
                     prompt = `Crea un grafico professionale (barre, linee, o torta) che visualizzi: ${suggestion.description}.
-                    Stile: pulito, con assi etichettati, leggenda chiara.`;
+
+REQUISITI FONDAMENTALI PER IL TESTO:
+- Tutti i numeri, etichette e legende devono essere PERFETTAMENTE leggibili
+- Font: Sans-serif professionale
+- Assi: Chiaramente etichettati
+- Valori: Precisi e leggibili
+- Leggenda: Chiara e ben posizionata
+- Zero errori nei numeri o testi
+
+STILE GRAFICO:
+- Tipo: Scegli il più appropriato (barre/linee/torta)
+- Colori: Distinti e professionali
+- Griglie: Sottili ma visibili
+- Dati: Chiari e ben rappresentati
+- Sfondo: Bianco o neutro
+- Etichette: Tutte presenti e leggibili`;
+
+                    if (hasText) {
+                        prompt += `\n\nDATI E ETICHETTE (usa ESATTAMENTE questi valori):\n${suggestion.textContent}`;
+                    }
                     break;
             }
 
-            prompt += `\n\nMotivazione: ${suggestion.reason}\nGenera SOLO l'immagine, senza testo aggiuntivo.`;
+            prompt += `\n\n⚠️ REGOLE CRITICHE:
+1. Se c'è testo specificato, copialo ESATTAMENTE senza modifiche
+2. Zero errori di ortografia o grammatica
+3. Testo sempre leggibile al 100%
+4. Massima qualità professionale
+5. Genera SOLO l'immagine richiesta, niente elementi extra
+
+Motivazione del design: ${suggestion.reason}`;
 
             return prompt;
         }
