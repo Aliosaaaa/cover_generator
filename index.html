@@ -292,11 +292,11 @@
         <!-- API Key Section -->
         <div id="apiKeySection" class="api-key-container mb-6">
             <div class="flex items-center justify-between mb-3">
-                <h3 class="section-title text-xl">🔑 API Key Gemini (Nano Banana)</h3>
+                <h3 class="section-title text-xl">🔑 API Key OpenAI (GPT Image)</h3>
             </div>
             <div id="apiKeyInput" class="flex gap-3">
                 <div class="relative flex-1">
-                    <input type="password" id="apiKeyField" class="w-full px-4 py-3 rounded-lg font-mono text-sm" placeholder="Inserisci la tua API key di Google Gemini">
+                    <input type="password" id="apiKeyField" class="w-full px-4 py-3 rounded-lg font-mono text-sm" placeholder="Inserisci la tua API key OpenAI">
                     <span id="toggleApiKey" class="eye-icon absolute right-3 top-1/2 transform -translate-y-1/2">
                         👁️
                     </span>
@@ -490,7 +490,7 @@
                 AI OSHA × KARMA WRITERS
             </div>
             <div class="text-gray-400 text-sm">
-                Powered by Gemini Nano Banana API
+                Powered by OpenAI GPT Image API
             </div>
         </footer>
 
@@ -549,7 +549,7 @@
         let currentKindleCoverB64 = null;
         let paperbackGenerated = false;
         let hardcoverGenerated = false;
-        let apiKey = localStorage.getItem('geminiApiKey') || "";
+        let apiKey = localStorage.getItem('openaiApiKey') || "";
 
         // Check if API key exists
         if (apiKey) {
@@ -563,7 +563,7 @@
             const key = apiKeyField.value.trim();
             if (key) {
                 apiKey = key;
-                localStorage.setItem('geminiApiKey', key);
+                localStorage.setItem('openaiApiKey', key);
                 apiKeyInput.classList.add('hidden');
                 apiKeySaved.classList.remove('hidden');
                 apiKeySection.classList.add('api-key-saved');
@@ -591,49 +591,56 @@
         });
 
         // --- API Call Logic ---
-        async function callNanoBananaAPI(prompt, images = []) {
+        async function callOpenAIImageAPI(prompt, images = []) {
             if (!apiKey) {
-                alert('Per favore, inserisci prima la tua API key di Gemini.');
+                alert('Per favore, inserisci prima la tua API key OpenAI.');
                 return null;
             }
-            
+
             showLoader(true);
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${apiKey}`;
-            const contents = [{ parts: [{ text: prompt }] }];
-            images.forEach(img => { contents[0].parts.push({ inlineData: { mimeType: img.type, data: img.data } }); });
-            const payload = { contents: contents, generationConfig: { responseModalities: ['TEXT', 'IMAGE'] } };
             try {
-                let response; let attempts = 0; let delay = 1000;
-                while (attempts < 5) {
-                    response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                    if (response.ok) break;
-                    if (response.status === 429 || response.status >= 500) {
-                        console.warn(`Request failed with status ${response.status}. Retrying in ${delay / 1000}s...`);
-                        await new Promise(resolve => setTimeout(resolve, delay));
-                        delay *= 2; attempts++;
-                    } else { throw new Error(`API request failed with status: ${response.status}`); }
+                const model = 'gpt-image-1';
+                let response;
+
+                if (images.length > 0) {
+                    const formData = new FormData();
+                    formData.append('model', model);
+                    formData.append('prompt', prompt);
+                    formData.append('size', '1024x1536');
+                    const reference = images[0];
+                    formData.append('image', base64ToBlob(reference.data, reference.type || 'image/png'), 'reference.png');
+
+                    response = await fetch('https://api.openai.com/v1/images/edits', {
+                        method: 'POST',
+                        headers: { Authorization: `Bearer ${apiKey}` },
+                        body: formData
+                    });
+                } else {
+                    response = await fetch('https://api.openai.com/v1/images', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: `Bearer ${apiKey}`
+                        },
+                        body: JSON.stringify({
+                            model,
+                            prompt,
+                            size: '1024x1536'
+                        })
+                    });
                 }
-                if (!response.ok) { throw new Error(`API request failed after multiple retries. Status: ${response.status}`); }
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Errore API: ${response.status} ${errorText}`);
+                }
+
                 const result = await response.json();
-                if (!result.candidates || result.candidates.length === 0) {
-                    const feedback = result.promptFeedback;
-                    let msg = "L'API non ha restituito candidati.";
-                    if (feedback?.blockReason) { msg += ` Motivo: ${feedback.blockReason}.`; }
-                    throw new Error(msg);
-                }
-                const candidate = result.candidates[0];
-                const base64Data = candidate.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+                const base64Data = result.data?.[0]?.b64_json;
                 if (!base64Data) {
-                    let msg = "Nessuna immagine generata dall'API.";
-                    if (candidate.finishReason === 'SAFETY') {
-                        msg = "La richiesta è stata bloccata per motivi di sicurezza. Prova a modificare il testo del titolo o degli altri campi.";
-                    } else if (candidate.finishReason === 'STOP') {
-                        msg = "L'IA non è riuscita a generare un'immagine questa volta. Prova a cliccare di nuovo su 'Genera' o a modificare leggermente il testo.";
-                    } else if (candidate.finishReason) {
-                        msg += ` Motivo: ${candidate.finishReason}.`;
-                    }
-                    throw new Error(msg);
+                    throw new Error("Nessuna immagine generata dall'API.");
                 }
+
                 return `data:image/png;base64,${base64Data}`;
             } catch (error) {
                 console.error('API Call Error:', error);
@@ -642,6 +649,23 @@
             } finally {
                 showLoader(false);
             }
+        }
+
+        function base64ToBlob(base64, mimeType) {
+            const byteCharacters = atob(base64);
+            const byteArrays = [];
+            const sliceSize = 512;
+
+            for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+                const slice = byteCharacters.slice(offset, offset + sliceSize);
+                const byteNumbers = new Array(slice.length);
+                for (let i = 0; i < slice.length; i++) {
+                    byteNumbers[i] = slice.charCodeAt(i);
+                }
+                byteArrays.push(new Uint8Array(byteNumbers));
+            }
+
+            return new Blob(byteArrays, { type: mimeType });
         }
 
         // --- Event Listeners ---
@@ -692,7 +716,7 @@ Linee guida fondamentali:
 
 Genera esclusivamente l'immagine della copertina.`;
             if (uploadedImages.length > 0) { prompt += "\nUsa le immagini caricate come forte ispirazione per stile e colori." }
-            const generatedImageB64 = await callNanoBananaAPI(prompt, uploadedImages);
+            const generatedImageB64 = await callOpenAIImageAPI(prompt, uploadedImages);
             if (generatedImageB64) {
                 currentKindleCoverB64 = generatedImageB64;
                 displayImage(currentKindleCoverB64);
@@ -706,7 +730,7 @@ Genera esclusivamente l'immagine della copertina.`;
             if (!modPrompt || !currentKindleCoverB64) { alert('Scrivi una modifica e genera prima una copertina.'); return; }
             const prompt = `Applica questa modifica all'immagine della copertina fornita: "${modPrompt}". Mantieni lo stile generale ma assicurati che il testo sia di alta qualità, leggibile e con un buon contrasto. Genera solo l'immagine modificata.`;
             const imageForModification = { type: 'image/png', data: currentKindleCoverB64.split(',')[1] };
-            const generatedImageB64 = await callNanoBananaAPI(prompt, [imageForModification]);
+            const generatedImageB64 = await callOpenAIImageAPI(prompt, [imageForModification]);
             if (generatedImageB64) { currentKindleCoverB64 = generatedImageB64; displayImage(currentKindleCoverB64); }
         }
 
@@ -812,7 +836,7 @@ Linee guida essenziali:
             backCoverPrompt += "\n\nGenera solo l'immagine del retro, nient'altro.";
 
             const frontCoverForApi = { type: 'image/png', data: currentKindleCoverB64.split(',')[1] };
-            const backCoverB64 = await callNanoBananaAPI(backCoverPrompt, [frontCoverForApi]);
+            const backCoverB64 = await callOpenAIImageAPI(backCoverPrompt, [frontCoverForApi]);
             if (!backCoverB64) { alert("Impossibile generare il retro della copertina."); return; }
 
             const targetCanvas = coverType === 'paperback' ? paperbackCanvas : hardcoverCanvas;
